@@ -81,13 +81,6 @@ jobs:
         mkdir -p ${{ env.SCCACHE_DIR }}
         rm -rf ${{ env.SCCACHE_DIR }}/*
 
-    - name: Enable Cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.SCCACHE_DIR }}
-        key: ${{ matrix.config.target-os }}-${{ matrix.config.arch }}-${{ env.short_llvm_commit_hash }}
-        restore-keys: ${{ matrix.config.target-os }}-${{ matrix.config.arch }}-
-
     - name: Configure, Build, Test, and Install LLVM (Ubuntu and macOS x64)
       if: matrix.config.arch == 'x64' && (matrix.config.target-os == 'ubuntu' || matrix.config.target-os == 'macos')
       run: >
@@ -107,6 +100,7 @@ jobs:
         -DLLVM_INSTALL_UTILS=ON
         -DLLVM_TARGETS_TO_BUILD="host;NVPTX;AMDGPU"
         -DLLVM_ENABLE_TERMINFO=OFF
+        -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF
         llvm-project/llvm
 
         ninja -C llvm-project/build check-mlir install
@@ -130,6 +124,7 @@ jobs:
         -DLLVM_INSTALL_UTILS=ON
         -DLLVM_TARGETS_TO_BUILD="host;NVPTX;AMDGPU"
         -DLLVM_ENABLE_TERMINFO=OFF
+        -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF
         llvm-project/llvm
 
         ninja -C llvm-project/build check-mlir install
@@ -175,6 +170,7 @@ jobs:
         -DCMAKE_LINKER=$LINKER \
         -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
         -DLLVM_ENABLE_ZSTD=OFF \
+        -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF \
         -DLLVM_INSTALL_UTILS=ON \
         -DCMAKE_INSTALL_PREFIX="${{ env.llvm_install_dir }}" \
         -DLLVM_TARGETS_TO_BUILD="AArch64;NVPTX;AMDGPU" \
@@ -225,6 +221,7 @@ jobs:
         -DLLVM_TARGETS_TO_BUILD="AArch64;NVPTX;AMDGPU"
         -DLLVM_USE_HOST_TOOLS=ON
         -DLLVM_ENABLE_TERMINFO=OFF
+        -DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF
         llvm-project/llvm
 
         ninja -C llvm-project/build install
