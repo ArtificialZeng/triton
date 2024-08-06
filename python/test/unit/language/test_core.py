@@ -5008,6 +5008,10 @@ mma_pairs = [
     [
         MmaLayout((3, 0), [4, 1], [1, 1], [1, 1], [0, 1], [16, 32, 32]),
         MmaLayout((3, 0), [4, 1], [1, 1], [1, 1], [0, 1], [16, 64, 32]),
+    ],
+    [
+        MmaLayout((3, 0), [4, 1], [1, 1], [1, 1], [0, 1], [16, 64, 32]),
+        MmaLayout((3, 0), [4, 1], [1, 1], [1, 1], [0, 1], [16, 32, 32]),
     ]
     # Mma -> mma support is TODO on Hopper (and Volta)
     # [
@@ -5038,7 +5042,7 @@ def test_convertmma2mma(M, N, mma_pair, dtype, device):
     num_warps = np.cumprod(src_layout.warps_per_cta)[-1]
 
     # Remove this hack once we have linear layout fully supports mma_to_mma conversion
-    if src_layout.version[0] == 0 and M == 64 and N == 1:
+    if src_layout.version[0] == 3 and M == 64 and N == 1:
         pytest.skip("Skip hopper mma2mma that requires shared memory")
 
     def do_test(src_layout, dst_layout):
