@@ -5038,7 +5038,7 @@ def test_convertmma2mma(M, N, mma_pair, dtype, device):
     num_warps = np.cumprod(src_layout.warps_per_cta)[-1]
 
     # Remove this hack once we have linear layout fully supports mma_to_mma conversion
-    if src_layout.version[0] == 0 and src_layout.instr_shape[1] == 64:
+    if src_layout.version[0] == 0 and M == 64 and N == 1:
         pytest.skip("Skip hopper mma2mma that requires shared memory")
 
     def do_test(src_layout, dst_layout):
