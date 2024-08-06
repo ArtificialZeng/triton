@@ -342,7 +342,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
         outVals[dstIdx.begin()->second] = inVals[i];
       }
     } else {
-      outVals.resize(conversion.getOutDimSize(kRegister));
+      outVals.resize(conversion.getInDimSize(kRegister));
       for (int i = 0; i < conversion.getInDimSize(kRegister); i++) {
         auto srcIdx = conversion.apply({{kRegister, i}});
         outVals[i] = inVals[srcIdx.begin()->second];
