@@ -275,7 +275,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     // data in different CTAs and we know we're not in case 4.
     LinearLayout conversion = srcLayout->invertAndCompose(*dstLayout);
 
-    LinearLayout invertConversion = dstLayout->invertAndCompose(*srcLayout);
+    LinearLayout inverseConversion = dstLayout->invertAndCompose(*srcLayout);
 
     int numLanes = conversion.getInDimSize(str_attr("lane"));
     int numWarps = conversion.getInDimSize(str_attr("warp"));
@@ -291,12 +291,21 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     // stronger than this, checking also that the choice of lane/warp/block does
     // not affect the permutation of registers.  If we allow different
     // lane/warp/blocks to have different permutations, we can generalize this.
-    if (std::optional<LinearLayout> c = invertConversion.divideRight(
+    if (std::optional<LinearLayout> c = conversion.divideRight(
             LinearLayout::identity1D(numLanes, kLane, kLane) *
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));
         c.has_value()) {
-      return transferWithinThread(*c, op, adaptor, rewriter);
+      return transferWithinThread(*c, op, adaptor, rewriter, /*srcToDst=*/true);
+    }
+
+    if (std::optional<LinearLayout> c = inverseConversion.divideRight(
+            LinearLayout::identity1D(numLanes, kLane, kLane) *
+            LinearLayout::identity1D(numWarps, kWarp, kWarp) *
+            LinearLayout::identity1D(numBlocks, kBlock, kBlock));
+        c.has_value()) {
+      return transferWithinThread(*c, op, adaptor, rewriter,
+                                  /*srcToDst=*/false);
     }
 
     if (std::optional<LinearLayout> c = conversion.divideRight(
@@ -310,10 +319,10 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
                                       adaptor, rewriter);
   }
 
-  LogicalResult
-  transferWithinThread(const LinearLayout &conversion, ConvertLayoutOp op,
-                       OpAdaptor adaptor,
-                       ConversionPatternRewriter &rewriter) const {
+  LogicalResult transferWithinThread(const LinearLayout &conversion,
+                                     ConvertLayoutOp op, OpAdaptor adaptor,
+                                     ConversionPatternRewriter &rewriter,
+                                     bool srcToDst) const {
     MLIRContext *ctx = op.getContext();
     auto loc = op.getLoc();
     StringAttr kRegister = str_attr("register");
@@ -325,10 +334,19 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
            ArrayRef{kRegister});
 
     auto inVals = unpackLLElements(loc, adaptor.getSrc(), rewriter);
-    SmallVector<Value> outVals(conversion.getInDimSize(kRegister));
-    for (int i = 0; i < conversion.getInDimSize(kRegister); i++) {
-      auto srcIdx = conversion.apply({{kRegister, i}});
-      outVals[i] = inVals[srcIdx.begin()->second];
+    SmallVector<Value> outVals;
+    if (srcToDst) {
+      outVals.resize(conversion.getOutDimSize(kRegister));
+      for (int i = 0; i < conversion.getInDimSize(kRegister); i++) {
+        auto dstIdx = conversion.apply({{kRegister, i}});
+        outVals[dstIdx.begin()->second] = inVals[i];
+      }
+    } else {
+      outVals.resize(conversion.getOutDimSize(kRegister));
+      for (int i = 0; i < conversion.getInDimSize(kRegister); i++) {
+        auto srcIdx = conversion.apply({{kRegister, i}});
+        outVals[i] = inVals[srcIdx.begin()->second];
+      }
     }
     Value result = packLLElements(loc, getTypeConverter(), outVals, rewriter,
                                   op.getType());
