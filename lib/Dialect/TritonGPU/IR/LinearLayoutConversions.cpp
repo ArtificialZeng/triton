@@ -265,15 +265,8 @@ LinearLayout ensureLayoutNotLargerThan(
       actualSize /= 2;
     }
   }
-  LinearLayout transform(std::move(bases),
-                         llvm::to_vector(layout.getOutDimNames()));
-  // Compose O' with L.
-  ret = layout.compose(transform);
-  for (auto outDim : llvm::enumerate(layout.getOutDimNames())) {
-    int32_t desiredSize = shape.lookup(outDim.value());
-    assert(ret.getOutDimSize(outDim.value()) == desiredSize);
-  }
-  return ret;
+  return LinearLayout(std::move(bases),
+                      llvm::to_vector(layout.getOutDimNames()));
 }
 
 // For each out-dim d, ensure the layout's out-size (i.e. its codomain) is no
