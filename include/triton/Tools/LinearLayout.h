@@ -664,16 +664,6 @@ public:
   // don't place any guarantees on the choices made by this function.
   [[nodiscard]] LinearLayout invertAndCompose(const LinearLayout &outer) const;
 
-  // Computes the inverse or pseudo-inverse of `this` LinearLayout.
-  //
-  // Formally, if B = A.invert(), then for all y, B(y) = x implies A(x) = y,
-  // meaning B(A(x)) = x if A is invertible.
-  //
-  // For example, consider an LL representing shared memory, mapping offset to
-  // a 2D index. Calling invert() on this LL would yield a new LL mapping a 2D
-  // index back to the shared memory offset, if such a mapping exists.
-  [[nodiscard]] LinearLayout invert() const;
-
   // For each in-dim, returns a bitmask of the "free variables" in the layout
   // function.
   //

@@ -274,6 +274,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     // block -> block mapping is {1, 2, 4, ...} then there's no movement between
     // data in different CTAs and we know we're not in case 4.
     LinearLayout conversion = srcLayout->invertAndCompose(*dstLayout);
+    LinearLayout inverseConversion = dstLayout->invertAndCompose(*srcLayout);
 
     int numLanes = conversion.getInDimSize(str_attr("lane"));
     int numWarps = conversion.getInDimSize(str_attr("warp"));
@@ -317,7 +318,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
       return transferWithinThread(*c, op, adaptor, rewriter, /*srcToDst=*/true);
     }
 
-    if (std::optional<LinearLayout> c = conversion.invert().divideRight(
+    if (std::optional<LinearLayout> c = inverseConversion.divideRight(
             LinearLayout::identity1D(numLanes, kLane, kLane) *
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));
@@ -391,10 +392,13 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     MLIRContext *ctx = op.getContext();
     auto loc = op.getLoc();
 
-    // TODO(jlebar): For now we handle only blocked/slice -> blocked/slice
-    // conversions.  Once we have ldmatrix support in
+    // TODO(jlebar): For now we handle only mma/blocked/slice ->
+    // mma/blocked/slice conversions.  Once we have ldmatrix support in
     // load/storeDistributedToShared, we can remove this constraint.
     std::function<bool(Attribute)> layoutIsOK = [&](Attribute layout) {
+      if (isa<NvidiaMmaEncodingAttr>(layout)) {
+        return true;
+      }
       if (isa<BlockedEncodingAttr>(layout)) {
         return true;
       }

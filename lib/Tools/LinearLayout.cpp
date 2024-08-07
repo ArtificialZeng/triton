@@ -916,17 +916,6 @@ LinearLayout LinearLayout::invertAndCompose(const LinearLayout &outer) const {
   return flatComposed.reshapeIns(retInDims).reshapeOuts(retOutDims);
 }
 
-LinearLayout LinearLayout::invert() const {
-  LinearLayout identity = LinearLayout::empty();
-  auto outDimNames = llvm::to_vector(getOutDimNames());
-  for (int dim = 0; dim < outDimNames.size(); dim++) {
-    auto dimSize = getOutDimSize(outDimNames[dim]);
-    identity *=
-        LinearLayout::identity1D(dimSize, outDimNames[dim], outDimNames[dim]);
-  }
-  return identity.invertAndCompose(*this);
-}
-
 llvm::MapVector<StringAttr, int32_t>
 LinearLayout::getFreeVariableMasks() const {
   std::unique_ptr<uint64_t[]> mat = getMatrix(*this);
