@@ -233,41 +233,36 @@ LinearLayout ensureLayoutNotLargerThan(
   }
   MLIRContext *ctx = shape.begin()->first.getContext();
 
-  // For the purposes of this function, "block" is the "most-minor" dimension.
-  // This is just a consequence of how legacy layouts work: We only put the same
-  // tensor element into two different blocks as a last resort, only after all
-  // the registers in all the lanes in all the warps in a block already have the
-  // same tensor element.  (Or, for shared layouts, only after all values in
-  // smem within a block have the same value.)
-  //
-  // inDimNames combines the in dims for register and shared layouts; that's OK
-  // because we skip in-dims that aren't present.  So we'll iterate over
-  // {blocked, register, lane, warp} or {blocked, offset}.
-  SmallVector<StringAttr> inDimNames = {
-      // for both register and shared layouts
-      S("block"),
-
-      // for register layouts
-      S("register"),
-      S("lane"),
-      S("warp"),
-
-      // for shared layouts
-      S("offset"),
-  };
-
   LinearLayout ret = layout;
-  for (auto outDimName : layout.getOutDimNames()) {
+  auto bases = layout.getBases();
+
+  for (auto outDim : llvm::enumerate(layout.getOutDimNames())) {
+    auto outDimName = outDim.value();
     int32_t actualSize = layout.getOutDimSize(outDimName);
     int32_t desiredSize = shape.lookup(outDimName);
     if (actualSize <= desiredSize) {
       continue;
     }
     assert(actualSize % desiredSize == 0);
-    for (StringAttr inDimName : llvm::reverse(inDimNames)) {
-      if (ret.hasInDim(inDimName)) {
-        ret = shrinkCodomain(ret, inDimName, outDimName, desiredSize);
+    // inDimName -> <baseIdx, output>
+    std::vector<std::pair<StringAttr, std::pair<int, int>>> sortedBases;
+    for (auto [inDimName, basis] : bases) {
+      for (auto [baseIdx, outValue] : llvm::enumerate(basis[outDim.index()])) {
+        sortedBases.emplace_back(inDimName, std::make_pair(baseIdx, outValue));
       }
+    }
+    // From the largest basis to the smallest.
+    llvm::sort(sortedBases, [](auto a, auto b) { return a.second > b.second; });
+    for (auto [inDimName, basisIdxAndOut] : sortedBases) {
+      if (actualSize <= desiredSize) {
+        break;
+      }
+      auto [basisIdx, outValue] = basisIdxAndOut;
+      if (outValue == 0) {
+        break;
+      }
+      bases[inDimName][basisIdx][outDim.index()] = 0;
+      actualSize /= 2;
     }
     assert(ret.getOutDimSize(outDimName) == desiredSize);
   }
