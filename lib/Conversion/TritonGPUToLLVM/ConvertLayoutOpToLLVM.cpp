@@ -275,8 +275,6 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     // data in different CTAs and we know we're not in case 4.
     LinearLayout conversion = srcLayout->invertAndCompose(*dstLayout);
 
-    LinearLayout inverseConversion = dstLayout->invertAndCompose(*srcLayout);
-
     int numLanes = conversion.getInDimSize(str_attr("lane"));
     int numWarps = conversion.getInDimSize(str_attr("warp"));
     int numBlocks = conversion.getInDimSize(str_attr("block"));
@@ -291,6 +289,26 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     // stronger than this, checking also that the choice of lane/warp/block does
     // not affect the permutation of registers.  If we allow different
     // lane/warp/blocks to have different permutations, we can generalize this.
+
+    // There are two three possible cases
+    // 1. The `src_layout` has the same number of registers as the `dst_layout`.
+    // 2. The `src_layout` has fewer registers than the `dst_layout`.
+    // 3. The `src_layout` has more registers than the `dst_layout`.
+    // In the second case, we may generate a conversion such as:
+    //
+    //                  reg   |   lane
+    //  reg (base=1)     1    |    0
+    //  reg (base=2)     2    |    0
+    //  --------------------------------
+    //  lane (base=1)    4    |    0
+    //  lane (base=2)    0    |    1
+    //
+    // This layout is not surjective because not all lanes are covered.
+    // Instead, we could use the inverse of the conversion, mapping from
+    // `dst_layout` to `src_layout`, which is surjective.  This inverse layout
+    // indicates that multiple destination registers may come from the same
+    // source register.
+    //
     if (std::optional<LinearLayout> c = conversion.divideRight(
             LinearLayout::identity1D(numLanes, kLane, kLane) *
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
@@ -299,7 +317,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
       return transferWithinThread(*c, op, adaptor, rewriter, /*srcToDst=*/true);
     }
 
-    if (std::optional<LinearLayout> c = inverseConversion.divideRight(
+    if (std::optional<LinearLayout> c = conversion.invert().divideRight(
             LinearLayout::identity1D(numLanes, kLane, kLane) *
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));

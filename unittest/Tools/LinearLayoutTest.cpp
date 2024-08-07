@@ -530,6 +530,17 @@ TEST_F(LinearLayoutTest, InvertAndCompose_BroadcastedDims2) {
   EXPECT_EQ(c.compose(b), a.transposeOuts(llvm::to_vector(b.getOutDimNames())));
 }
 
+TEST_F(LinearLayoutTest, Invert) {
+  LinearLayout l1({{S("in1"), {{0, 1}, {0, 2}, {1, 0}, {2, 0}}},
+                   {S("in2"), {{0, 4}, {4, 0}, {8, 0}}}},
+                  {S("out1"), S("out2")});
+
+  LinearLayout l2 = l1.invert();
+  EXPECT_EQ(l2, LinearLayout({{S("out1"), {{4, 0}, {8, 0}, {0, 2}, {0, 4}}},
+                              {S("out2"), {{1, 0}, {2, 0}, {0, 1}}}},
+                             {S("in1"), S("in2")}));
+}
+
 TEST_F(LinearLayoutTest, NumConsecutiveInOut) {
   EXPECT_EQ(
       1,
