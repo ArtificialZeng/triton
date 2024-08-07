@@ -264,7 +264,14 @@ LinearLayout ensureLayoutNotLargerThan(
       bases[inDimName][basisIdx][outDim.index()] = 0;
       actualSize /= 2;
     }
-    assert(ret.getOutDimSize(outDimName) == desiredSize);
+  }
+  LinearLayout transform(std::move(bases),
+                         llvm::to_vector(layout.getOutDimNames()));
+  // Compose O' with L.
+  ret = layout.compose(transform);
+  for (auto outDim : llvm::enumerate(layout.getOutDimNames())) {
+    int32_t desiredSize = shape.lookup(outDim.value());
+    assert(ret.getOutDimSize(outDim.value()) == desiredSize);
   }
   return ret;
 }
