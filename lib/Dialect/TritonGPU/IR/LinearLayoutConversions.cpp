@@ -233,9 +233,7 @@ LinearLayout ensureLayoutNotLargerThan(
   }
   MLIRContext *ctx = shape.begin()->first.getContext();
 
-  LinearLayout ret = layout;
   auto bases = layout.getBases();
-
   for (auto outDim : llvm::enumerate(layout.getOutDimNames())) {
     auto outDimName = outDim.value();
     int32_t actualSize = layout.getOutDimSize(outDimName);
@@ -247,8 +245,9 @@ LinearLayout ensureLayoutNotLargerThan(
     // inDimName -> <baseIdx, output>
     std::vector<std::pair<StringAttr, std::pair<int, int>>> sortedBases;
     for (auto [inDimName, basis] : bases) {
-      for (auto [baseIdx, outValue] : llvm::enumerate(basis[outDim.index()])) {
-        sortedBases.emplace_back(inDimName, std::make_pair(baseIdx, outValue));
+      for (size_t baseIdx = 0; baseIdx < basis.size(); baseIdx++) {
+        sortedBases.emplace_back(
+            inDimName, std::make_pair(baseIdx, basis[baseIdx][outDim.index()]));
       }
     }
     // From the largest basis to the smallest.
@@ -257,9 +256,9 @@ LinearLayout ensureLayoutNotLargerThan(
       if (actualSize <= desiredSize) {
         break;
       }
-      auto [basisIdx, outValue] = basisIdxAndOut;
-      if (outValue == 0) {
-        break;
+      auto [basisIdx, out] = basisIdxAndOut;
+      if (out == 0) {
+        continue;
       }
       bases[inDimName][basisIdx][outDim.index()] = 0;
       actualSize /= 2;

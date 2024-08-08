@@ -598,6 +598,10 @@ public:
   bool sublayoutIsZero(ArrayRef<StringAttr> inDimNames,
                        ArrayRef<StringAttr> outDimNames) const;
 
+  // Is there any value in the basis vector that is zero?
+  bool sublayoutHasZero(ArrayRef<StringAttr> inDimNames,
+                        ArrayRef<StringAttr> outDimNames) const;
+
   // Is the sublayout restricted to inDimNames + outDimNames and then flattened
   // to 1D the identity layout (ignoring out-dim sizes)?
   bool sublayoutIsIdentity(ArrayRef<StringAttr> inDimNames,

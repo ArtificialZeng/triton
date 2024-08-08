@@ -315,16 +315,13 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));
         c.has_value()) {
-      return transferWithinThread(*c, op, adaptor, rewriter, /*srcToDst=*/true);
-    }
-
-    if (std::optional<LinearLayout> c = inverseConversion.divideRight(
-            LinearLayout::identity1D(numLanes, kLane, kLane) *
-            LinearLayout::identity1D(numWarps, kWarp, kWarp) *
-            LinearLayout::identity1D(numBlocks, kBlock, kBlock));
-        c.has_value()) {
-      return transferWithinThread(*c, op, adaptor, rewriter,
-                                  /*srcToDst=*/false);
+      if (c->sublayoutHasZero({kLane}, {kLane})) {
+        return transferWithinThread(*c, op, adaptor, rewriter,
+                                    /*srcToDst=*/false);
+      } else {
+        return transferWithinThread(*c, op, adaptor, rewriter,
+                                    /*srcToDst=*/true);
+      }
     }
 
     if (std::optional<LinearLayout> c = conversion.divideRight(
