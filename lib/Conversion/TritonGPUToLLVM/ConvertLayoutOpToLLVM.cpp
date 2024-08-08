@@ -315,7 +315,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));
         c.has_value()) {
-      if (c->sublayoutHasZero({kLane}, {kLane})) {
+      if (c->sublayoutHasZero({kRegister}, {kRegister})) {
         return transferWithinThread(*c, op, adaptor, rewriter,
                                     /*srcToDst=*/false);
       } else {
