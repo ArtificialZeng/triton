@@ -736,19 +736,6 @@ bool LinearLayout::sublayoutIsZero(ArrayRef<StringAttr> inDimNames,
   return true;
 }
 
-bool LinearLayout::sublayoutHasZero(ArrayRef<StringAttr> inDimNames,
-                                    ArrayRef<StringAttr> outDimNames) const {
-  LinearLayout ss = sublayout(inDimNames, outDimNames);
-  for (auto [inDim, inDimBases] : ss.bases) {
-    for (auto basis : inDimBases) {
-      if (llvm::any_of(basis, [](int32_t b) { return b == 0; })) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 bool LinearLayout::sublayoutIsIdentity(ArrayRef<StringAttr> inDimNames,
                                        ArrayRef<StringAttr> outDimNames) const {
   LinearLayout sl =

@@ -316,7 +316,9 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));
         srcToDst.has_value()) {
-      if (srcToDst->sublayoutHasZero({kRegister}, {kRegister})) {
+      auto inRegSize = srcLayout->getInDimSize(kRegister);
+      auto outRegSize = dstLayout->getInDimSize(kRegister);
+      if (inRegSize <= outRegSize) {
         auto dstToSrc = inverseConversion.divideRight(
             LinearLayout::identity1D(numLanes, kLane, kLane) *
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
