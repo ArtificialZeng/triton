@@ -311,16 +311,20 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     // indicates that multiple destination registers may come from the same
     // source register.
     //
-    if (std::optional<LinearLayout> c = conversion.divideRight(
+    if (std::optional<LinearLayout> srcToDst = conversion.divideRight(
             LinearLayout::identity1D(numLanes, kLane, kLane) *
             LinearLayout::identity1D(numWarps, kWarp, kWarp) *
             LinearLayout::identity1D(numBlocks, kBlock, kBlock));
-        c.has_value()) {
-      if (c->sublayoutHasZero({kRegister}, {kRegister})) {
-        return transferWithinThread(*c, op, adaptor, rewriter,
+        srcToDst.has_value()) {
+      if (srcToDst->sublayoutHasZero({kRegister}, {kRegister})) {
+        auto dstToSrc = inverseConversion.divideRight(
+            LinearLayout::identity1D(numLanes, kLane, kLane) *
+            LinearLayout::identity1D(numWarps, kWarp, kWarp) *
+            LinearLayout::identity1D(numBlocks, kBlock, kBlock));
+        return transferWithinThread(*dstToSrc, op, adaptor, rewriter,
                                     /*srcToDst=*/false);
       } else {
-        return transferWithinThread(*c, op, adaptor, rewriter,
+        return transferWithinThread(*srcToDst, op, adaptor, rewriter,
                                     /*srcToDst=*/true);
       }
     }
