@@ -280,6 +280,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     int numWarps = conversion.getInDimSize(str_attr("warp"));
     int numBlocks = conversion.getInDimSize(str_attr("block"));
 
+    StringAttr kRegister = str_attr("register");
     StringAttr kLane = str_attr("lane");
     StringAttr kWarp = str_attr("warp");
     StringAttr kBlock = str_attr("block");
